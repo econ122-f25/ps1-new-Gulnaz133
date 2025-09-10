@@ -1,6 +1,6 @@
 ---
 title: "Problem Set 1"
-author: "Your Name"
+author: "G/Gulnaz Amanzholova"
 date: "`r Sys.Date()`"
 output: github_document
 ---
@@ -40,8 +40,15 @@ This section will test your understanding of basic R syntax, data types, and vec
 
 ```{r}
 # Your code here
+course_name <- "Introduction to Data Science"
+num_students <- 45L
+class(course_name)
+class(num_students)
+pi_value <- 3.14159
+is_active <- TRUE
+num_students >= 50
+course_name == "introduction to data science"
 ```
-
 ---
 
 ### Task 0.2: Working with Vectors
@@ -53,6 +60,12 @@ This section will test your understanding of basic R syntax, data types, and vec
 
 ```{r}
 # Your code here
+temperatures <- c(22,25,19,28,23)
+sum(temperatures)
+mean(temperatures)
+temperatures <- c(temperatures, 30)
+is_hot <- temperatures> 25
+
 ```
 
 ---
@@ -74,11 +87,15 @@ mtcars_processed <- mtcars %>%
 
 # Your code starts here: Filter and arrange mtcars_processed
 # Your code here
+mtcars_filtered <- mtcars_processed %>%
+  filter((cyl == 4 | cyl == 6) & mpg > 20) %>%
+  arrange(mpg, desc(cyl))
+mtcars_filtered
 ```
 
 ### Short Answer
 Based on your filtered and arranged results, briefly describe the characteristics of the cars that appear at the top of your output. What does this tell you about the relationship between cylinders and miles per gallon in this subset?
-
+Inverse relationship, the less the miles per gallon, the more the cylinder. 
 ---
 
 ### Task 1.2: Mutating and Selecting
@@ -94,11 +111,21 @@ Using the `mtcars_processed` dataset:
 
 ```{r}
 # Your code here
+mtcars_new <- mtcars_processed %>%
+  mutate(hp_per_wt = hp / wt,
+    qsec_category = case_when(
+      qsec < 17 ~ "Fast",
+      qsec >= 17 & qsec < 19 ~ "Medium",
+      qsec >= 19 ~ "Slow")) %>%
+  select(car_model, mpg, hp, wt, hp_per_wt, qsec_category)
+
+mtcars_new 
 ```
 
 ### Short Answer
 Why might creating `hp_per_wt` and `qsec_category` be useful metrics when analyzing car performance, beyond just raw horsepower and weight?
-
+'hp_per_wt' is useful because cars have different weight, so the metric shows power relative to size. Two cars with the same horsepower can feel very different to drive if one is much heavier.
+'qsec_category' is useful because it translates raw quarter-mile times into simple categories (Fast, Medium, Slow), making it easier to compare performance across many cars without needing to interpret exact times.
 ---
 
 ### Task 1.3: Grouped Summaries
@@ -111,10 +138,18 @@ Using the `mtcars_processed` dataset:
 
 ```{r}
 # Your code here
+mtcars_summary <- mtcars_processed %>%
+  group_by(cyl, am) %>%
+  summarise(average_mpg = mean(mpg),median_hp = median(hp),num_cars = n(),.groups = "drop") %>%
+  arrange(cyl, desc(average_mpg))
+
+mtcars_summary
+
 ```
 
 ### Short Answer
 Based on your grouped summary, what general trends do you observe regarding average `mpg` and median `hp` across different combinations of `cylinders` and `transmission` types? How do these summaries help differentiate car characteristics?
+Cars with fewer cylinders generally have the highest average mpg, while 8-cylinder cars show the lowest fuel efficiency. Within the same cylinder group, cars with manual transmission (am = 1) often show higher average mpg than their automatic counterparts.Median horsepower tends to rise with the number of cylinders, so 8-cylinder cars are the most powerful, while 4-cylinder cars are the least.
 
 ---
 
@@ -167,22 +202,39 @@ This task demonstrates how creating new variables that depend on previous time p
 
 ```{r}
 # Your code here
+product_sales_wide<-product_sales_wide%>%
+  mutate (Growth_2021 = (Year_2021 - Year_2020) / Year_2020 * 100,
+    Growth_2022 = (Year_2022 - Year_2021) / Year_2021 * 100)
+product_sales_wide
 ```
 
 2.  **Reshape to Long Format:** Reshape `product_sales_wide` into a long format called `product_sales_long`. Pivot the year columns (`Year_2020`, `Year_2021`, `Year_2022`) into two new columns: `Year` and `Sales`. Make sure `Year` is numeric.
 
 ```{r}
 # Your code here
+product_sales_long <- product_sales_wide %>%
+  pivot_longer(cols = starts_with("Year_"), names_to = "Year", values_to = "Sales") %>%
+ mutate(Year = as.numeric(str_replace(Year, "Year_", "")))
+product_sales_long
+
 ```
 3.  **Analysis in Long Format:** Using the `product_sales_long` dataset, calculate a single `Growth_Rate` column that represents the year-over-year growth for each product. You should use `group_by()` and `lag()`. The formula for growth rate is `(current_year_sales - previous_year_sales) / previous_year_sales * 100`.
 
 ```{r}
 # Your code here
+product_sales_long <- product_sales_long %>%
+  group_by(product) %>%
+  arrange(Year, .by_group = TRUE) %>%
+  mutate(Growth_Rate = (Sales - lag(Sales)) / lag(Sales) * 100) %>%
+  ungroup()
+
+product_sales_long
+
 ```
 
 ### Short Answer
 Compare the code required to calculate the year-over-year growth rate in the wide format versus the long format. Which approach is more concise and scalable if you had many more years of data? Why is the long format generally preferred for this type of time-series calculation?
-
+In the wide format, each growth rate must be calculated with a separate formula, which quickly becomes repetitive and unmanageable with many years of data. In contrast, the long format allows a single mutate() with lag() to handle all years at once, making the code much more concise and scalable. The long format is generally preferred for time-series calculations because it follows tidy data principles and makes it easier to apply functions consistently across time.
 ---
 
 ### Task 2.2: Mutating Joins: Student Demographics and Grades
@@ -195,15 +247,23 @@ This task explores combining student demographic information with their academic
 
 ```{r}
 # Your code for inner_join and its explanation
-```{r}
+inner_join_result <- students_demographics %>%
+  inner_join(student_grades, by = "student_id")
+inner_join_result
 # Your code for left_join and its explanation
-```{r}
+left_join_result <- students_demographics %>%
+  left_join(student_grades, by = "student_id")
+left_join_result
 # Your code for advanced mutate after left join
+avg_grade_result <- left_join_result %>%
+  group_by(student_id, student_name) %>%
+  mutate(avg_grade = mean(grade_score, na.rm = TRUE))
+avg_grade_result
 ```
 
 ### Short Answer
 Compare the number of rows and the content of the `inner_join()` and `left_join()` results. Specifically, identify which student(s) are present in one join but not the other, and explain why. What does the average grade calculation reveal about students with multiple grades or no grades?
-
+The inner_join() only includes students with both demographics and grades, excluding students like Frank (S007) who have no grades. The left_join() keeps all students from the demographics table, so Frank appears with NA for grade-related fields, while S006, who lacks demographics, does not appear in either join. The average grade calculation summarizes multiple grades for students like Alice and clearly shows NA for students with no grades.
 ---
 
 ### Task 2.3: Filtering Joins: Identifying Student Enrollment Status
@@ -216,14 +276,24 @@ This task focuses on using filtering joins to identify different categories of s
 
 ```{r}
 # Your code for question 1 (semi_join)
-```{r}
+enrolled_students <- students_demographics %>%
+  semi_join(student_grades, by = "student_id")
+
+enrolled_students
 # Your code for question 2 (anti_join on students_demographics)
-```{r}
+students_without_grades <- students_demographics %>%
+  anti_join(student_grades, by = "student_id")
+
+students_without_grades
 # Your code for question 3 (anti_join on student_grades)
+grades_without_students <- student_grades %>%
+  anti_join(students_demographics, by = "student_id")
+
+grades_without_students
 ```
 
 ### Short Answer
 Describe the distinct insights gained from each of the three filtering joins in this task. How do these joins help in data validation and understanding the completeness of your student records?
-
+The semi_join identifies students who have both demographic information and grade records, confirming active enrollment. The anti_join on demographics highlights students without any grades, such as new enrollees or those who haven’t completed courses. The anti_join on grades reveals grade records with no matching student, indicating potential data errors. Together, these joins help validate the dataset and assess the completeness and accuracy of student records.
 
 
