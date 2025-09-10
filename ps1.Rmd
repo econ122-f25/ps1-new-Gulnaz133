@@ -65,6 +65,7 @@ sum(temperatures)
 mean(temperatures)
 temperatures <- c(temperatures, 30)
 is_hot <- temperatures> 25
+is_hot
 
 ```
 
