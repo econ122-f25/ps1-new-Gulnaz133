@@ -1,7 +1,7 @@
 Problem Set 1
 ================
 G/Gulnaz Amanzholova
-2025-09-08
+2025-09-11
 
 ### Introduction
 
@@ -100,7 +100,10 @@ mean(temperatures)
 ``` r
 temperatures <- c(temperatures, 30)
 is_hot <- temperatures> 25
+is_hot
 ```
+
+    ## [1] FALSE FALSE FALSE  TRUE FALSE  TRUE
 
 ------------------------------------------------------------------------
 
